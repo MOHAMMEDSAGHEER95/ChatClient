@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Threads Page</title>
+</head>
+<body>
+  <h1>Available Threads</h1>
+  <ul id="threadsList"></ul> <!-- Where the list of threads will be added -->
+
+  <script>
+    // Get the token from localStorage
+    const token = localStorage.getItem('access_token');
+
+    // Check if the token exists, and make the request if it does
+    if (token) {
+      fetch('http://localhost:8000/threads/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        const threadsList = document.getElementById('threadsList');
+
+        // Loop over the thread_id array and create a link for each one
+        data.thread_id.forEach(thread => {
+          const listItem = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = `/threads/${thread}`; // Set the href to point to the thread's URL
+          link.innerText = thread; // Display the thread ID as link text
+          listItem.appendChild(link);
+          threadsList.appendChild(listItem);
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching threads:', error);
+      });
+    } else {
+      document.getElementById('threadsList').innerText = 'No access token found. Please login.';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <style>
+
+#messageInput {
+            width: 300px; /* Width of the input field */
+            height: 50px; /* Height of the input field */
+            font-size: 20px; /* Font size */
+            padding: 10px; /* Padding inside the input */
+            border: 1px solid #ccc; /* Border color */
+            border-radius: 5px; /* Rounded corners */
+        }
+
+        button {
+            height: 50px; /* Height of the button */
+            font-size: 20px; /* Font size */
+            padding: 10px; /* Padding inside the button */
+            margin-left: 10px; /* Space between input and button */
+            background-color: #4CAF50; /* Button background color */
+            color: white; /* Text color */
+            border: none; /* Remove border */
+            border-radius: 5px; /* Rounded corners */
+            cursor: pointer; /* Change cursor to pointer */
+        }
+
+        button:hover {
+            background-color: #45a049; /* Darker background on hover */
+        }
+        /* Styles for chat messages */
+        .chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            margin-top: 20px;
+        }
+        .message {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            max-width: 80%;
+        }
+        .left {
+            background-color: #e0e0e0;
+            text-align: left;
+            float: left;
+        }
+        .right {
+            background-color: #d1ffd1;
+            text-align: right;
+            float: right;
+        }
+        .clearfix {
+            clear: both;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Chat</h1>
+
+    <!-- Input field for the message -->
+    <input id="messageInput" type="text" placeholder="Enter your message" />
+    <button onclick="sendMessage()">Send</button>
+
+    <!-- Display messages -->
+    <ul id="messages" class="chat-container"></ul>
+
+    <script>
+        const token = localStorage.getItem('access_token'); // Retrieve access token from localStorage
+        const threadId = 'PLACEHOLDER'; // Set the thread ID you want to load
+
+        // Establish WebSocket connection to the FastAPI WebSocket endpoint
+        const ws = new WebSocket(`ws://localhost:8000/ws/chat/PLACEHOLDER`);
+
+        // When a message is received from the server, display it
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data); // Parse the received JSON data
+            const message = data.message; // Extract the message
+            const isUser = data.is_user;
+            displayMessage(message, isUser); // Display message as received
+        };
+
+        // Load messages from the REST API on page load
+        if (token) {
+            fetch(`http://localhost:8000/threads/${threadId}/messages`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Loop through the messages and display them
+                data.messages.forEach(messageObj => {
+                    displayMessage(messageObj.message, messageObj.role_user);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching thread messages:', error);
+            });
+        } else {
+            document.getElementById('messages').innerText = 'No access token found. Please login.';
+        }
+
+        // Function to display a message in the chat
+        function displayMessage(message, roleUser) {
+            const messages = document.getElementById('messages');
+            const messageElement = document.createElement('li');
+            messageElement.classList.add('message');
+            
+            // Check the role_user field and add respective class
+            if (roleUser) {
+                messageElement.classList.add('left');
+            } else {
+                messageElement.classList.add('right');
+            }
+
+            messageElement.textContent = message; // Set message content
+            messages.appendChild(messageElement); // Append the message to the chat
+          
+            // Clear floats for each message to stack them properly
+            const clearfix = document.createElement('div');
+            clearfix.classList.add('clearfix');
+            messages.appendChild(clearfix);
+        }
+
+        // Function to send a message to the server
+        function sendMessage() {
+            const input = document.getElementById("messageInput");
+            ws.send(input.value);  // Send message to WebSocket server
+            input.value = '';       // Clear the input field
+        }
+
+        // Handle WebSocket connection errors
+        ws.onerror = function(error) {
+            console.error("WebSocket error observed:", error);
+        };
+
+        // Optional: Alert when WebSocket connection is closed
+        ws.onclose = function() {
+            alert("WebSocket connection closed");
+        };
+    </script>
+</body>
+</html>

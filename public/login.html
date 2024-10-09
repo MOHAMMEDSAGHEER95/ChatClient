@@ -1,0 +1,64 @@
+<!-- public/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+</head>
+<body>
+  <h1>Login</h1>
+
+  <!-- Login form -->
+  <form id="loginForm">
+    <div>
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" required>
+    </div>
+    <div>
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required>
+    </div>
+    <button type="submit">Login</button>
+  </form>
+
+  <p id="responseMessage"></p>
+
+  <script>
+    // Handle form submission
+    document.getElementById('loginForm').addEventListener('submit', async function(event) {
+      event.preventDefault(); // Prevent the form from submitting the traditional way
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      // Send login data to the API
+      try {
+        const response = await fetch('http://localhost:8000/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': 'csrftoken=bAF9AoeNDltdNXVnExhoGGSFXokNWnxl' // Include the CSRF token if required by the API
+          },
+          body: JSON.stringify({ username, password })
+        });
+
+        // Parse the response
+        const result = await response.json();
+        
+        if (response.ok) {
+          localStorage.setItem('access_token', result.access_token);
+          document.getElementById('responseMessage').innerText = `Login successful. Token: ${result.access_token}`;
+          setTimeout(() => {
+          window.location.href = 'tokens';  // Redirect to tokens.html
+        }, 1000);
+        } else {
+          document.getElementById('responseMessage').innerText = `Error: ${result.detail || 'Login failed'}`;
+        }
+      } catch (error) {
+        document.getElementById('responseMessage').innerText = 'Error: Unable to reach the server.';
+      }
+    });
+  </script>
+</body>
+</html>
